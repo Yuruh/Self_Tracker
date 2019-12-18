@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/joho/godotenv"
 	"io/ioutil"
 	"log"
@@ -39,7 +40,18 @@ func buildSpotifyAuthUri() string {
 	return req.URL.String()
 }
 
-func getAccessFromRefresh() string {
+type TokenResponse struct {
+	AccessToken string `json:"access_token"`
+}
+
+type NTP struct {
+	SrvReceptionTime int64 `json:"srvReceptionTime"`
+	ClientTransmissionTime int64 `json:"clientTransmissionTime"`
+	SrvTransmissionTime int64 `json:"srvTransmissionTime"`
+	ClientReceptionTime int64 `json:"clientReceptionTime"`
+}
+
+func getAccessFromRefresh() TokenResponse {
 	client := &http.Client{}
 
 	requestBody := url.Values{}
@@ -69,9 +81,16 @@ func getAccessFromRefresh() string {
 	}
 
 	println(resp.StatusCode)
-//	println("response: ", string(body))
+	println("response: ", string(body))
 
-	return string(body)
+	var data TokenResponse
+
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	return data
 }
 
 func getSpotifyTokens() {
@@ -108,6 +127,70 @@ func getSpotifyTokens() {
 	println("response: ", string(body))
 }
 
+func getCurrentTrack(accessToken string) {
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/me/player", nil)
+
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	req.Header.Add("Authorization", "Bearer " + accessToken)
+
+	println(req.Header.Get("Authorization"))
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	println(resp.StatusCode)
+	println("response: ", string(body))
+}
+
+func getAftgApiSyncDelta() int64 {
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", "http://localhost:8080/ntp", nil)
+
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	query := req.URL.Query()
+	query.Add("clientTransmissionTime", strconv.FormatInt(time.Now().UnixNano() / int64(time.Millisecond), 10))
+	req.URL.RawQuery = query.Encode()
+	req.Header.Add("X-API-KEY", os.Getenv("AFTG_API_KEY"))
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	var ntp NTP
+
+	err = json.Unmarshal(body, &ntp)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	ntp.ClientReceptionTime = time.Now().UnixNano() / int64(time.Millisecond)
+
+	var delta = ((ntp.SrvReceptionTime - ntp.ClientTransmissionTime) + (ntp.SrvTransmissionTime - ntp.ClientReceptionTime)) / 2
+
+	return delta
+}
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -115,8 +198,17 @@ func main() {
 	}
 
 	// runTicker()
-//	testSpotify()
+	//	testSpotify()
 	println(buildSpotifyAuthUri())
-//	getSpotifyTokens()
-	println(getAccessFromRefresh())
+	//	getSpotifyTokens()
+
+	// var access = getAccessFromRefresh()
+	// getCurrentTrack(access.AccessToken)
+
+	var delta = getAftgApiSyncDelta()
+
+//	var roundTrip = (ntp.ClientReceptionTime - ntp.ClientTransmissionTime) - (ntp.SrvTransmissionTime - ntp.SrvReceptionTime)
+
+	println("delta =", delta)
+
 }
