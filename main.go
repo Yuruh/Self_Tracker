@@ -14,11 +14,14 @@ import (
 )
 
 func runTicker() {
-	var ticker *time.Ticker = time.NewTicker(time.Second * 3)
+	var ticker *time.Ticker = time.NewTicker(time.Minute * 3)
 	for {
 		select {
 		case <- ticker.C:
 			println("TICK")
+			var access = getAccessFromRefresh()
+			getCurrentTrack(access.AccessToken)
+			println("delay =", GetAftgConnector().getSrvDelay())
 		}
 	}
 }
@@ -120,6 +123,30 @@ func getSpotifyTokens() {
 	println("response: ", string(body))
 }
 
+type SpotifyAlbum struct {
+	Artists []SpotifyArtist `json:"artists"`
+	Name string `json:"name"`
+	Uri string `json:"uri"`
+}
+
+type SpotifyArtist struct {
+	Name string `json:"name"`
+	Id string `json:"id"`
+	Uri string `json:"uri"`
+}
+
+type SpotifyTrack struct {
+	Name string `json:"name"`
+	Id string `json:"id"`
+	Uri string `json:"uri"`
+	Artists []SpotifyArtist `json:"artists"`
+	Album SpotifyAlbum `json:"album"`
+}
+
+type SpotifyPlayer struct {
+	Item SpotifyTrack `json:"item"`
+}
+
 func getCurrentTrack(accessToken string) {
 	client := &http.Client{}
 
@@ -143,7 +170,17 @@ func getCurrentTrack(accessToken string) {
 	}
 
 	println(resp.StatusCode)
-	println("response: ", string(body))
+	var spotifyPlayer SpotifyPlayer
+
+	println(string(body))
+
+	err = json.Unmarshal(body, &spotifyPlayer)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	println(spotifyPlayer.Item.Name)
+	println(spotifyPlayer.Item.Album.Name)
+	println(spotifyPlayer.Item.Artists[0].Name)
 }
 
 
@@ -197,13 +234,15 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	// runTicker()
-	//	testSpotify()
-	println(buildSpotifyAuthUri())
+//	runTicker()
+	//testSpotify()
+//	println(buildSpotifyAuthUri())
 	//	getSpotifyTokens()
 
-	// var access = getAccessFromRefresh()
-	// getCurrentTrack(access.AccessToken)
+	var access = getAccessFromRefresh()
+	getCurrentTrack(access.AccessToken)
+
+
 
 	var delta = GetAftgConnector().getSrvDelay() //getAftgApiSyncDelta()
 
