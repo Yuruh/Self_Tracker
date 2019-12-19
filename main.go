@@ -44,13 +44,6 @@ type TokenResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-type NTP struct {
-	SrvReceptionTime int64 `json:"srvReceptionTime"`
-	ClientTransmissionTime int64 `json:"clientTransmissionTime"`
-	SrvTransmissionTime int64 `json:"srvTransmissionTime"`
-	ClientReceptionTime int64 `json:"clientReceptionTime"`
-}
-
 func getAccessFromRefresh() TokenResponse {
 	client := &http.Client{}
 
@@ -153,8 +146,17 @@ func getCurrentTrack(accessToken string) {
 	println("response: ", string(body))
 }
 
+
+type NTP struct {
+	SrvReceptionTime int64 `json:"srvReceptionTime"`
+	ClientTransmissionTime int64 `json:"clientTransmissionTime"`
+	SrvTransmissionTime int64 `json:"srvTransmissionTime"`
+	ClientReceptionTime int64 `json:"clientReceptionTime"`
+}
+
 func getAftgApiSyncDelta() int64 {
 	client := &http.Client{}
+	var ntp NTP
 
 	req, err := http.NewRequest("GET", "http://localhost:8080/ntp", nil)
 
@@ -167,6 +169,7 @@ func getAftgApiSyncDelta() int64 {
 	req.Header.Add("X-API-KEY", os.Getenv("AFTG_API_KEY"))
 
 	resp, err := client.Do(req)
+	ntp.ClientReceptionTime = time.Now().UnixNano() / int64(time.Millisecond)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
@@ -177,16 +180,13 @@ func getAftgApiSyncDelta() int64 {
 		log.Fatalln(err.Error())
 	}
 
-	var ntp NTP
-
 	err = json.Unmarshal(body, &ntp)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 
-	ntp.ClientReceptionTime = time.Now().UnixNano() / int64(time.Millisecond)
-
-	var delta = ((ntp.SrvReceptionTime - ntp.ClientTransmissionTime) + (ntp.SrvTransmissionTime - ntp.ClientReceptionTime)) / 2
+	var delta = ((ntp.SrvReceptionTime - ntp.ClientTransmissionTime) +
+		(ntp.SrvTransmissionTime - ntp.ClientReceptionTime)) / 2
 
 	return delta
 }
@@ -205,7 +205,7 @@ func main() {
 	// var access = getAccessFromRefresh()
 	// getCurrentTrack(access.AccessToken)
 
-	var delta = getAftgApiSyncDelta()
+	var delta = GetAftgConnector().getSrvDelay() //getAftgApiSyncDelta()
 
 //	var roundTrip = (ntp.ClientReceptionTime - ntp.ClientTransmissionTime) - (ntp.SrvTransmissionTime - ntp.SrvReceptionTime)
 
