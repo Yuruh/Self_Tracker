@@ -1,4 +1,4 @@
-package main
+package aftg
 
 import (
 	"encoding/json"
@@ -19,7 +19,7 @@ var instance *AftgConnector
 type AftgConnector struct {}
 
 
-func GetAftgConnector() *AftgConnector {
+func GetConnector() *AftgConnector {
 	if atomic.LoadUint32(&initialized) == 1 {
 		return instance
 	}
@@ -63,7 +63,14 @@ func runAftgRequest(method string, path string, requestBody, queryParams map[str
 	return resp.StatusCode, body, err
 }
 
-func (aftg *AftgConnector) getSrvDelay() int64 {
+type NTP struct {
+	SrvReceptionTime int64 `json:"srvReceptionTime"`
+	ClientTransmissionTime int64 `json:"clientTransmissionTime"`
+	SrvTransmissionTime int64 `json:"srvTransmissionTime"`
+	ClientReceptionTime int64 `json:"clientReceptionTime"`
+}
+
+func (aftg *AftgConnector) GetSrvDelay() int64 {
 	var ntp NTP
 
 	code, body, err := runAftgRequest("GET", "ntp", nil ,

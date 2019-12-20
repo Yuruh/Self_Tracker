@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/Yuruh/Self_Tracker/aftg"
+	"github.com/Yuruh/Self_Tracker/spotify"
 	"github.com/joho/godotenv"
 	"io/ioutil"
 	"log"
@@ -21,7 +23,7 @@ func runTicker() {
 			println("TICK")
 			var access = getAccessFromRefresh()
 			getCurrentTrack(access.AccessToken)
-			println("delay =", GetAftgConnector().getSrvDelay())
+			println("delay =", aftg.GetConnector().GetSrvDelay())
 		}
 	}
 }
@@ -183,14 +185,7 @@ func getCurrentTrack(accessToken string) {
 	println(spotifyPlayer.Item.Artists[0].Name)
 }
 
-
-type NTP struct {
-	SrvReceptionTime int64 `json:"srvReceptionTime"`
-	ClientTransmissionTime int64 `json:"clientTransmissionTime"`
-	SrvTransmissionTime int64 `json:"srvTransmissionTime"`
-	ClientReceptionTime int64 `json:"clientReceptionTime"`
-}
-
+/*
 func getAftgApiSyncDelta() int64 {
 	client := &http.Client{}
 	var ntp NTP
@@ -227,7 +222,7 @@ func getAftgApiSyncDelta() int64 {
 
 	return delta
 }
-
+*/
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -235,16 +230,14 @@ func main() {
 	}
 
 //	runTicker()
-	//testSpotify()
 //	println(buildSpotifyAuthUri())
-	//	getSpotifyTokens()
 
-	var access = getAccessFromRefresh()
-	getCurrentTrack(access.AccessToken)
+	//var access = getAccessFromRefresh()
+	//getCurrentTrack(access.AccessToken)
 
+	spotify.GetConnector().Ping()
 
-
-	var delta = GetAftgConnector().getSrvDelay() //getAftgApiSyncDelta()
+	var delta = aftg.GetConnector().GetSrvDelay() //getAftgApiSyncDelta()
 
 //	var roundTrip = (ntp.ClientReceptionTime - ntp.ClientTransmissionTime) - (ntp.SrvTransmissionTime - ntp.SrvReceptionTime)
 
