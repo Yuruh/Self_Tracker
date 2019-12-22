@@ -14,12 +14,12 @@ import (
 
 var mu sync.Mutex
 var initialized uint32
-var instance *AftgConnector
+var instance *Connector
 
-type AftgConnector struct {}
+type Connector struct {}
 
 
-func GetConnector() *AftgConnector {
+func GetConnector() *Connector {
 	if atomic.LoadUint32(&initialized) == 1 {
 		return instance
 	}
@@ -27,7 +27,7 @@ func GetConnector() *AftgConnector {
 	defer mu.Unlock()
 
 	if initialized == 0 {
-		instance = &AftgConnector {
+		instance = &Connector{
 		}
 		atomic.StoreUint32(&initialized, 1)
 	}
@@ -70,7 +70,7 @@ type NTP struct {
 	ClientReceptionTime int64 `json:"clientReceptionTime"`
 }
 
-func (aftg *AftgConnector) GetSrvDelay() int64 {
+func (aftg *Connector) GetSrvDelay() int64 {
 	var ntp NTP
 
 	code, body, err := runAftgRequest("GET", "ntp", nil ,

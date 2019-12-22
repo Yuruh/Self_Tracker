@@ -21,8 +21,8 @@ func runTicker() {
 		select {
 		case <- ticker.C:
 			println("TICK")
-			var access = getAccessFromRefresh()
-			getCurrentTrack(access.AccessToken)
+			//var access = getAccessFromRefresh()
+			//getCurrentTrack(access.AccessToken)
 			println("delay =", aftg.GetConnector().GetSrvDelay())
 		}
 	}
@@ -125,66 +125,6 @@ func getSpotifyTokens() {
 	println("response: ", string(body))
 }
 
-type SpotifyAlbum struct {
-	Artists []SpotifyArtist `json:"artists"`
-	Name string `json:"name"`
-	Uri string `json:"uri"`
-}
-
-type SpotifyArtist struct {
-	Name string `json:"name"`
-	Id string `json:"id"`
-	Uri string `json:"uri"`
-}
-
-type SpotifyTrack struct {
-	Name string `json:"name"`
-	Id string `json:"id"`
-	Uri string `json:"uri"`
-	Artists []SpotifyArtist `json:"artists"`
-	Album SpotifyAlbum `json:"album"`
-}
-
-type SpotifyPlayer struct {
-	Item SpotifyTrack `json:"item"`
-}
-
-func getCurrentTrack(accessToken string) {
-	client := &http.Client{}
-
-	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/me/player", nil)
-
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-	req.Header.Add("Authorization", "Bearer " + accessToken)
-
-	println(req.Header.Get("Authorization"))
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-
-	println(resp.StatusCode)
-	var spotifyPlayer SpotifyPlayer
-
-	println(string(body))
-
-	err = json.Unmarshal(body, &spotifyPlayer)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-	println(spotifyPlayer.Item.Name)
-	println(spotifyPlayer.Item.Album.Name)
-	println(spotifyPlayer.Item.Artists[0].Name)
-}
-
 /*
 func getAftgApiSyncDelta() int64 {
 	client := &http.Client{}
@@ -235,12 +175,20 @@ func main() {
 	//var access = getAccessFromRefresh()
 	//getCurrentTrack(access.AccessToken)
 
-	spotify.GetConnector().Ping()
+	spotifyPlayer, err := spotify.GetConnector().GetCurrentTrack()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 
-	var delta = aftg.GetConnector().GetSrvDelay() //getAftgApiSyncDelta()
+	print("Title ", spotifyPlayer.Item.Name)
+	print(" from Album ", spotifyPlayer.Item.Album.Name)
+	print(" by Artist ", spotifyPlayer.Item.Artists[0].Name)
+	println(" is playing since ", spotifyPlayer.ProgressMs, " milliseconds")
+
+	//var delta = aftg.GetConnector().GetSrvDelay() //getAftgApiSyncDelta()
 
 //	var roundTrip = (ntp.ClientReceptionTime - ntp.ClientTransmissionTime) - (ntp.SrvTransmissionTime - ntp.SrvReceptionTime)
 
-	println("delta =", delta)
+	//println("delta =", delta)
 
 }
