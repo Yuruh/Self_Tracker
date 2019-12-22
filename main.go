@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/Yuruh/Self_Tracker/aftg"
+	"fmt"
 	"github.com/Yuruh/Self_Tracker/spotify"
 	"github.com/joho/godotenv"
 	"io/ioutil"
@@ -16,14 +16,45 @@ import (
 )
 
 func runTicker() {
-	var ticker *time.Ticker = time.NewTicker(time.Minute * 3)
+//	var ticker *time.Ticker = time.NewTicker(time.Minute * 3)
+	const tickInterval time.Duration = time.Minute * 1
+	var ticker *time.Ticker = time.NewTicker(tickInterval)
+	var savedPlayer spotify.Player
 	for {
 		select {
 		case <- ticker.C:
-			println("TICK")
-			//var access = getAccessFromRefresh()
-			//getCurrentTrack(access.AccessToken)
-			println("delay =", aftg.GetConnector().GetSrvDelay())
+			spotifyPlayer, err := spotify.GetConnector().GetCurrentTrack()
+			if err != nil {
+				if err, ok := err.(*spotify.TrackError); ok {
+					println(err.Code)
+				}
+				log.Fatal(err.Error())
+			}
+			if savedPlayer.Item.Id != spotifyPlayer.Item.Id {
+				println("Track Changed")
+
+				if savedPlayer.Item.Id != "" {
+					var durationPlayedBeforeNextTrack time.Duration = tickInterval - time.Duration(spotifyPlayer.ProgressMs) * time.Millisecond
+
+					var trackEndTime = time.Now().UnixNano() / int64(time.Millisecond) - spotifyPlayer.ProgressMs
+
+					var trackBeginTime = trackEndTime -
+						savedPlayer.ProgressMs -
+						int64(durationPlayedBeforeNextTrack / time.Millisecond)
+
+					fmt.Print("Title \"", savedPlayer.Item.Name, "\" played from ", time.Unix(trackBeginTime / 1000, 0))
+					fmt.Println(" to", time.Unix(trackEndTime / 1000, 0))
+				}
+			}
+			savedPlayer = spotifyPlayer//.Copy()
+
+//			print("Title ", spotifyPlayer.Item.Name)
+//			print(" from Album ", spotifyPlayer.Item.Album.Name)
+//			print(" by Artist ", spotifyPlayer.Item.Artists[0].Name)
+//			println(" is playing since ", spotifyPlayer.ProgressMs, " milliseconds")
+
+
+			//println("delay =", aftg.GetConnector().GetSrvDelay())
 		}
 	}
 }
@@ -169,21 +200,14 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
+	runTicker()
 //	runTicker()
 //	println(buildSpotifyAuthUri())
 
 	//var access = getAccessFromRefresh()
 	//getCurrentTrack(access.AccessToken)
 
-	spotifyPlayer, err := spotify.GetConnector().GetCurrentTrack()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
 
-	print("Title ", spotifyPlayer.Item.Name)
-	print(" from Album ", spotifyPlayer.Item.Album.Name)
-	print(" by Artist ", spotifyPlayer.Item.Artists[0].Name)
-	println(" is playing since ", spotifyPlayer.ProgressMs, " milliseconds")
 
 	//var delta = aftg.GetConnector().GetSrvDelay() //getAftgApiSyncDelta()
 

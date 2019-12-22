@@ -3,6 +3,7 @@ package spotify
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -107,9 +108,40 @@ type Track struct {
 	Album   Album    `json:"album"`
 }
 
+//todo copy album
+func (track *Track) Copy() Track {
+	return Track{
+		Name:    track.Name,
+		Id:      track.Id,
+		Uri:     track.Uri,
+		Artists: nil,
+		Album:   Album{
+			Artists: nil,
+			Name:    track.Album.Name,
+			Uri:     track.Album.Uri,
+		},
+	}
+}
+
 type Player struct {
 	ProgressMs int64 `json:"progress_ms"`
 	Item Track `json:"item"`
+}
+
+func (player *Player) Copy() Player {
+	return Player{
+		Item: player.Item.Copy(),
+		ProgressMs: player.ProgressMs,
+	}
+}
+
+type TrackError struct {
+	err string
+	Code int8
+}
+
+func (err *TrackError) Error() string {
+	return "track error"
 }
 
 func (spotify *Connector) getCurrentTrack(retryAmount int8) (Player, error) {
@@ -128,7 +160,9 @@ func (spotify *Connector) getCurrentTrack(retryAmount int8) (Player, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalln(err.Error())
+		fmt.Println(err.Error())
+		fmt.Println("Retrying...", retryAmount)
+		return spotify.getCurrentTrack(retryAmount - 1)
 	}
 	defer resp.Body.Close()
 
@@ -145,7 +179,7 @@ func (spotify *Connector) getCurrentTrack(retryAmount int8) (Player, error) {
 		}
 		return spotifyPlayer, nil
 	case resp.StatusCode == http.StatusNoContent:
-		return spotifyPlayer, errors.New("user is not currently playing music")
+		return spotifyPlayer, &TrackError{Code: int8(1)}// errors.New("user is not currently playing music")
 	case resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusBadRequest:
 		println("Invalid request")
 		body, err := ioutil.ReadAll(resp.Body)
