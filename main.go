@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Yuruh/Self_Tracker/aftg"
 	"github.com/Yuruh/Self_Tracker/spotify"
 	"github.com/joho/godotenv"
 	"io/ioutil"
@@ -17,12 +18,14 @@ import (
 
 func runTicker() {
 //	var ticker *time.Ticker = time.NewTicker(time.Minute * 3)
-	const tickInterval time.Duration = time.Minute * 1
+	const tickInterval time.Duration = time.Second * 45
 	var ticker *time.Ticker = time.NewTicker(tickInterval)
+
 	var savedPlayer spotify.Player
 	for {
 		select {
 		case <- ticker.C:
+			var delay = aftg.GetConnector().GetSrvDelay()
 			spotifyPlayer, err := spotify.GetConnector().GetCurrentTrack()
 			if err != nil {
 				if err, ok := err.(*spotify.TrackError); ok {
@@ -44,6 +47,13 @@ func runTicker() {
 
 					fmt.Print("Title \"", savedPlayer.Item.Name, "\" played from ", time.Unix(trackBeginTime / 1000, 0))
 					fmt.Println(" to", time.Unix(trackEndTime / 1000, 0))
+					aftg.GetConnector().AddTag(aftg.Tag{
+						TimestampBegin: trackBeginTime,
+						TimestampEnd: trackEndTime,
+						Name: savedPlayer.Item.Artists[0].Name + "_" + savedPlayer.Item.Name,
+						ProductName: savedPlayer.Item.Artists[0].Name,
+						TagName: savedPlayer.Item.Name,
+					}, delay)
 				}
 			}
 			savedPlayer = spotifyPlayer//.Copy()
@@ -52,9 +62,6 @@ func runTicker() {
 //			print(" from Album ", spotifyPlayer.Item.Album.Name)
 //			print(" by Artist ", spotifyPlayer.Item.Artists[0].Name)
 //			println(" is playing since ", spotifyPlayer.ProgressMs, " milliseconds")
-
-
-			//println("delay =", aftg.GetConnector().GetSrvDelay())
 		}
 	}
 }

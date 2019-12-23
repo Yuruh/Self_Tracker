@@ -1,7 +1,10 @@
 package aftg
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -35,19 +38,21 @@ func GetConnector() *Connector {
 	return instance
 }
 
-func runAftgRequest(method string, path string, requestBody, queryParams map[string]string) (int, []byte, error) {
+func runAftgRequest(method string, path string, requestBody io.Reader, queryParams map[string]string, additionalHeaders map[string]string) (int, []byte, error) {
 	client := &http.Client{}
-	req, err := http.NewRequest(method, "http://localhost:8080/" + path, nil)
+	req, err := http.NewRequest(method, "http://localhost:8080/" + path, requestBody)
 	if err != nil {
 		return -1, nil, err
 	}
 	req.Header.Add("X-API-KEY", os.Getenv("AFTG_API_KEY"))
 	req.Header.Add("Content-Type", "application/json")
+	for key, value := range additionalHeaders {
+		req.Header.Add(key, value)
+	}
 
 	query := req.URL.Query()
 	for key, value := range queryParams {
 		query.Add(key, value)
-
 	}
 	req.URL.RawQuery = query.Encode()
 
@@ -73,8 +78,8 @@ type NTP struct {
 func (aftg *Connector) GetSrvDelay() int64 {
 	var ntp NTP
 
-	code, body, err := runAftgRequest("GET", "ntp", nil ,
-		map[string]string{"clientTransmissionTime": strconv.FormatInt(time.Now().UnixNano() / int64(time.Millisecond), 10)})
+	code, body, err := runAftgRequest("GET", "ntp", nil,
+		map[string]string{"clientTransmissionTime": strconv.FormatInt(time.Now().UnixNano() / int64(time.Millisecond), 10)}, nil)
 	if err != nil || code != http.StatusOK {
 		log.Fatalln(err.Error(), code)
 	}
@@ -90,4 +95,36 @@ func (aftg *Connector) GetSrvDelay() int64 {
 		(ntp.SrvTransmissionTime - ntp.ClientReceptionTime)) / 2
 
 	return delta
+}
+
+type Tag struct {
+	Name string `json:"name"`
+	TimestampBegin int64 `json:"timestampBegin"`
+	TimestampEnd int64 `json:"timestampEnd"`
+	ProductName string `json:"productName"`
+	TagName string `json:"tagName"`
+}
+
+func (aftg *Connector) AddTag(tag Tag, clockDelta int64) {
+	fmt.Println("Creating Tag")
+	bodyBytes, err := json.Marshal(tag)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	code, body, err := runAftgRequest(
+		"POST",
+		"tags",
+		bytes.NewReader(bodyBytes),
+		map[string]string{"clientTransmissionTime": strconv.FormatInt(time.Now().UnixNano() / int64(time.Millisecond), 10)},
+		map[string]string{"X-CLOCK-DELTA": strconv.FormatInt(clockDelta, 10)},
+	)
+
+	if err != nil {
+		log.Println("Aftg Request Error", err.Error())
+	}
+	if code != http.StatusCreated {
+		log.Println("Unexpected return code", code)
+		println(string(body))
+	}
 }
