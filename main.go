@@ -16,6 +16,10 @@ import (
 	"time"
 )
 
+func Dummy() int64 {
+	return 1
+}
+
 func runTicker() {
 //	var ticker *time.Ticker = time.NewTicker(time.Minute * 3)
 	const tickInterval time.Duration = time.Second * 45
