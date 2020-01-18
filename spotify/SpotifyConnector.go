@@ -108,7 +108,6 @@ type Track struct {
 	Album   Album    `json:"album"`
 }
 
-//todo copy album
 func (track *Track) Copy() Track {
 	return Track{
 		Name:    track.Name,
@@ -135,9 +134,15 @@ func (player *Player) Copy() Player {
 	}
 }
 
+type ErrorCode int8
+
+const (
+	NotPlaying ErrorCode = 1
+)
+
 type TrackError struct {
 	err string
-	Code int8
+	Code ErrorCode
 }
 
 func (err *TrackError) Error() string {
@@ -179,7 +184,7 @@ func (spotify *Connector) getCurrentTrack(retryAmount int8) (Player, error) {
 		}
 		return spotifyPlayer, nil
 	case resp.StatusCode == http.StatusNoContent:
-		return spotifyPlayer, &TrackError{Code: int8(1)}// errors.New("user is not currently playing music")
+		return spotifyPlayer, &TrackError{Code: NotPlaying} // errors.New("user is not currently playing music")
 	case resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusBadRequest:
 		println("Invalid request")
 		body, err := ioutil.ReadAll(resp.Body)

@@ -1,0 +1,15 @@
+# This docker-compose is the root configuration. It is expecting to be called before any other docker-compose conf file
+# eg. docker-compose -f docker-compose.yml -f docker-compose.[prod/dev/test].yml <cmd>
+version: "2.2"
+services:
+  postgres:
+    # we use latest for now to get mongo 4.2.0 for $round in aggreg
+    image: "postgres:12.1"
+  api:
+    environment:
+      - DB_HOST=postgres
+    env_file:
+      - .env
+    build: "."
+    volumes:
+      - ./aftg:/usr/src/self_tracker/aftg

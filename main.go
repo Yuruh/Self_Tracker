@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Yuruh/Self_Tracker/aftg"
+
+	//	"github.com/Yuruh/Self_Tracker/aftg"
 	"github.com/Yuruh/Self_Tracker/spotify"
-	"github.com/joho/godotenv"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -20,6 +21,15 @@ func Dummy() int64 {
 	return 1
 }
 
+/*
+	DESIGN IDEAS
+
+	I want everyone to be able to use this API.
+
+	That means we need to store users, to ask user for AFTG API Key and for Spotify OAuth
+
+ */
+
 func runTicker() {
 //	var ticker *time.Ticker = time.NewTicker(time.Minute * 3)
 	const tickInterval time.Duration = time.Second * 45
@@ -30,12 +40,16 @@ func runTicker() {
 		select {
 		case <- ticker.C:
 			var delay = aftg.GetConnector().GetSrvDelay()
+			fmt.Println(delay)
 			spotifyPlayer, err := spotify.GetConnector().GetCurrentTrack()
 			if err != nil {
 				if err, ok := err.(*spotify.TrackError); ok {
-					println(err.Code)
+					if err.Code == spotify.NotPlaying {
+						println("Not currently playing")
+					} else {
+						log.Fatal(err.Error())
+					}
 				}
-				log.Fatal(err.Error())
 			}
 			if savedPlayer.Item.Id != spotifyPlayer.Item.Id {
 				println("Track Changed")
@@ -51,13 +65,13 @@ func runTicker() {
 
 					fmt.Print("Title \"", savedPlayer.Item.Name, "\" played from ", time.Unix(trackBeginTime / 1000, 0))
 					fmt.Println(" to", time.Unix(trackEndTime / 1000, 0))
-					aftg.GetConnector().AddTag(aftg.Tag{
+					/*aftg.GetConnector().AddTag(aftg.Tag{
 						TimestampBegin: trackBeginTime,
 						TimestampEnd: trackEndTime,
 						Name: savedPlayer.Item.Artists[0].Name + "_" + savedPlayer.Item.Name,
 						ProductName: savedPlayer.Item.Artists[0].Name,
 						TagName: savedPlayer.Item.Name,
-					}, delay)
+					}, delay)*/
 				}
 			}
 			savedPlayer = spotifyPlayer//.Copy()
@@ -206,14 +220,14 @@ func getAftgApiSyncDelta() int64 {
 }
 */
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+//	err := godotenv.Load()
+//	if err != nil {
+//		log.Fatal("Error loading .env file")
+//	}
 
 	runTicker()
-//	runTicker()
-//	println(buildSpotifyAuthUri())
+
+	//	println(buildSpotifyAuthUri())
 
 	//var access = getAccessFromRefresh()
 	//getCurrentTrack(access.AccessToken)

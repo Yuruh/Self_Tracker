@@ -40,7 +40,7 @@ func GetConnector() *Connector {
 
 func runAftgRequest(method string, path string, requestBody io.Reader, queryParams map[string]string, additionalHeaders map[string]string) (int, []byte, error) {
 	client := &http.Client{}
-	req, err := http.NewRequest(method, "http://localhost:8080/" + path, requestBody)
+	req, err := http.NewRequest(method, os.Getenv("AFTG_API_URL") + path, requestBody)
 	if err != nil {
 		return -1, nil, err
 	}
@@ -80,8 +80,12 @@ func (aftg *Connector) GetSrvDelay() int64 {
 
 	code, body, err := runAftgRequest("GET", "ntp", nil,
 		map[string]string{"clientTransmissionTime": strconv.FormatInt(time.Now().UnixNano() / int64(time.Millisecond), 10)}, nil)
-	if err != nil || code != http.StatusOK {
-		log.Fatalln(err.Error(), code)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	if code != http.StatusOK {
+		log.Fatalln(code)
 	}
 
 	err = json.Unmarshal(body, &ntp)
