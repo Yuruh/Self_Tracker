@@ -3,8 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Yuruh/Self_Tracker/aftg"
-	"github.com/Yuruh/Self_Tracker/spotify"
+	"github.com/Yuruh/Self_Tracker/src/aftg"
+	"github.com/Yuruh/Self_Tracker/src/spotify"
+	_ "github.com/lib/pq"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -234,10 +235,22 @@ func main() {
 
 //	http.Handle("/foo", fooHandler)
 
+	DataBaseConnect()
+	/*_, err := sql.Open("postgres", "user=pqgotest dbname=pqgotest")
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		println("Connected to db, apparently")
+	}*/
+
 	http.HandleFunc("/spotify", func(w http.ResponseWriter, r *http.Request) {
 		println(buildSpotifyAuthUri())
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(buildSpotifyAuthUri()))
+	})
+
+	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+
 	})
 
 	log.Fatal(http.ListenAndServe(":8090", nil))

@@ -6,14 +6,13 @@ services:
     # we use latest for now to get mongo 4.2.0 for $round in aggreg
     image: "postgres:12.1"
   api:
-    network_mode: host
+#    network_mode: host
     environment:
       - DB_HOST=postgres
     env_file:
       - .env
     build: "."
     volumes:
-      - ./spotify:/usr/src/self_tracker/spotify
-      - ./aftg:/usr/src/self_tracker/aftg
+      - ./src:/usr/src/self_tracker/src
     ports:
       - 8090:8090

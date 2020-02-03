@@ -19,6 +19,8 @@ var mu sync.Mutex
 var initialized uint32
 var instance *Connector
 
+// may not need to be a singleton
+
 type Connector struct {}
 
 

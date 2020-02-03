@@ -19,5 +19,7 @@ RUN go get github.com/pilu/fresh
 # Run the compiled binary.
 #ENTRYPOINT ["/app"]
 
+WORKDIR /usr/src/self_tracker/src
+
 # Run with live reload
 CMD ["fresh"]
