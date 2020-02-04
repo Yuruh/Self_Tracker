@@ -1,7 +1,23 @@
-version: "2.2"
+version: "3.5"
 services:
   postgres:
     image: "postgres:12.1"
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: changeme
+    volumes:
+      - /data/postgresql:/var/lib/postgresql/data
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: antoine.lempereur@epitech.eu
+      PGADMIN_DEFAULT_PASSWORD: azerazer
+    ports:
+      - 1500:80
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
   api:
 #    network_mode: host
     environment:
@@ -13,3 +29,8 @@ services:
       - ./src:/usr/src/self_tracker/src
     ports:
       - 8090:8090
+    depends_on:
+      - postgres
+
+volumes:
+  pgadmin-data:

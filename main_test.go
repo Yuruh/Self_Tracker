@@ -1,4 +1,4 @@
-package Self_Tracker
+package main
 
 import "testing"
 

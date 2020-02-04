@@ -1,11 +1,11 @@
-package Self_Tracker
+package main
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/Yuruh/Self_Tracker/src/aftg"
+	"github.com/Yuruh/Self_Tracker/src/database"
 	"github.com/Yuruh/Self_Tracker/src/spotify"
-	"github.com/Yuruh/Self_Tracker/src"
 	_ "github.com/lib/pq"
 	"io/ioutil"
 	"log"
@@ -225,7 +225,28 @@ func main() {
 
 //	http.Handle("/foo", fooHandler)
 
-	src.DataBaseConnect()
+	db := database.Connect()
+
+	defer db.Close()
+
+	database.RunMigration(db)
+
+	// Create
+/*	db.Create(&models.Product{Code: "L1212", Price: 1000})
+
+	// Read
+	var product Product
+	db.First(&product, 1) // find product with id 1
+	db.First(&product, "code = ?", "L1212") // find product with code l1212
+
+	println(product.Code)
+
+	// Update - update product's price to 2000
+	db.Model(&product).Update("Price", 2000)
+
+	// Delete - delete product
+	db.Delete(&product)*/
+
 	/*_, err := sql.Open("postgres", "user=pqgotest dbname=pqgotest")
 	if err != nil {
 		log.Fatal(err)
