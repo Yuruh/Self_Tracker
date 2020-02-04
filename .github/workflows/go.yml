@@ -1,4 +1,4 @@
-name: Go
+name: Build and Test
 on: [push]
 jobs:
 
@@ -36,16 +36,3 @@ jobs:
 
     - name: Run tests
       run: go test -cover
-
-  deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
-    steps:
-
-    - name: Setup Heroku
-      uses: actions/heroku@1.0.0
-
-    - name: Login
-      run: heroku login user pwd
-
-    - name:
