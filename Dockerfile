@@ -6,6 +6,7 @@ WORKDIR /usr/src/self_tracker
 # Fetch dependencies first; they are less susceptible to change on every build
 # and will therefore be cached for speeding up the next build
 COPY ./go.mod ./go.sum ./
+
 RUN go mod download
 
 # Import the code from the context.
@@ -18,8 +19,6 @@ RUN go get github.com/pilu/fresh
 
 # Run the compiled binary.
 #ENTRYPOINT ["/app"]
-
-WORKDIR /usr/src/self_tracker/src
 
 # Run with live reload
 CMD ["fresh"]

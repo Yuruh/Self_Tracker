@@ -1,10 +1,11 @@
-package main
+package Self_Tracker
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/Yuruh/Self_Tracker/src/aftg"
 	"github.com/Yuruh/Self_Tracker/src/spotify"
+	"github.com/Yuruh/Self_Tracker/src"
 	_ "github.com/lib/pq"
 	"io/ioutil"
 	"log"
@@ -224,7 +225,7 @@ func main() {
 
 //	http.Handle("/foo", fooHandler)
 
-	DataBaseConnect()
+	src.DataBaseConnect()
 	/*_, err := sql.Open("postgres", "user=pqgotest dbname=pqgotest")
 	if err != nil {
 		log.Fatal(err)
