@@ -205,3 +205,22 @@ func (spotify *Connector) getCurrentTrack(retryAmount int8) (Player, error) {
 func (spotify *Connector) GetCurrentTrack() (Player, error) {
 	return spotify.getCurrentTrack(spotify.retryAmount)
 }
+
+func BuildAuthUri() string {
+	req, err := http.NewRequest("GET", "https://accounts.spotify.com/authorize", nil)
+
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	query := req.URL.Query()
+	query.Add("client_id", os.Getenv("SPOTIFY_CLIENT_ID"))
+	query.Add("response_type", "code",)
+	query.Add("redirect_uri", "http://localhost:3000/spotify-auth")
+	query.Add("scope", "user-read-playback-state")
+	query.Add("show_dialog", "true")
+	query.Add("state", "a_client_id_to_match_db")
+	req.URL.RawQuery = query.Encode()
+
+	return req.URL.String()
+}

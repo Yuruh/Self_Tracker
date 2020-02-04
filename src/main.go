@@ -89,23 +89,6 @@ func runTicker() {
 	}
 }
 
-func buildSpotifyAuthUri() string {
-	req, err := http.NewRequest("GET", "https://accounts.spotify.com/authorize", nil)
-
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-
-	query := req.URL.Query()
-	query.Add("client_id", os.Getenv("SPOTIFY_CLIENT_ID"))
-	query.Add("response_type", "code",)
-	query.Add("redirect_uri", "https://ea4f5723.ngrok.io/auth-spotify")
-	query.Add("scope", "user-read-playback-state")
-	req.URL.RawQuery = query.Encode()
-
-	return req.URL.String()
-}
-
 type TokenResponse struct {
 	AccessToken string `json:"access_token"`
 }
@@ -225,6 +208,12 @@ func getAftgApiSyncDelta() int64 {
 }
 */
 
+func setupResponse(w *http.ResponseWriter, req *http.Request) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+}
+
 func main() {
 	//	err := godotenv.Load()
 //	if err != nil {
@@ -244,9 +233,9 @@ func main() {
 	}*/
 
 	http.HandleFunc("/spotify", func(w http.ResponseWriter, r *http.Request) {
-		println(buildSpotifyAuthUri())
+		setupResponse(&w, r)
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(buildSpotifyAuthUri()))
+		_, _ = w.Write([]byte(spotify.BuildAuthUri()))
 	})
 
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
