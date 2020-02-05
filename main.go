@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Yuruh/Self_Tracker/src/aftg"
+	"github.com/Yuruh/Self_Tracker/src/api"
 	"github.com/Yuruh/Self_Tracker/src/database"
 	"github.com/Yuruh/Self_Tracker/src/spotify"
 	_ "github.com/lib/pq"
@@ -209,12 +210,6 @@ func getAftgApiSyncDelta() int64 {
 }
 */
 
-func setupResponse(w *http.ResponseWriter, req *http.Request) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
-	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-}
-
 func main() {
 	//	err := godotenv.Load()
 //	if err != nil {
@@ -231,40 +226,7 @@ func main() {
 
 	database.RunMigration(db)
 
-	// Create
-/*	db.Create(&models.Product{Code: "L1212", Price: 1000})
-
-	// Read
-	var product Product
-	db.First(&product, 1) // find product with id 1
-	db.First(&product, "code = ?", "L1212") // find product with code l1212
-
-	println(product.Code)
-
-	// Update - update product's price to 2000
-	db.Model(&product).Update("Price", 2000)
-
-	// Delete - delete product
-	db.Delete(&product)*/
-
-	/*_, err := sql.Open("postgres", "user=pqgotest dbname=pqgotest")
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		println("Connected to db, apparently")
-	}*/
-
-	http.HandleFunc("/spotify", func(w http.ResponseWriter, r *http.Request) {
-		setupResponse(&w, r)
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(spotify.BuildAuthUri()))
-	})
-
-	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-
-	})
-
-	log.Fatal(http.ListenAndServe(":8090", nil))
+	api.RunHttpServer()
 
 
 	//var access = getAccessFromRefresh()
