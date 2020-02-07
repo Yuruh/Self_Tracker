@@ -220,11 +220,11 @@ func main() {
 
 //	http.Handle("/foo", fooHandler)
 
-	db := database.Connect()
+//	db := database.Connect()
 
-	defer db.Close()
+	defer database.GetDB().Close()
 
-	database.RunMigration(db)
+	database.RunMigration()
 
 	api.RunHttpServer()
 

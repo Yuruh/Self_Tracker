@@ -5,7 +5,29 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"log"
+	"sync"
+	"sync/atomic"
 )
+
+var mu sync.Mutex
+var initialized uint32 = 0
+var instance *gorm.DB
+
+func GetDB() *gorm.DB {
+	if atomic.LoadUint32(&initialized) == 1 {
+		return instance
+	}
+	mu.Lock()
+	defer mu.Unlock()
+
+	if initialized == 0 {
+		instance = Connect()
+		atomic.StoreUint32(&initialized, 1)
+	}
+
+	return instance
+}
+
 
 func Connect() *gorm.DB {
 	db, err := gorm.Open("postgres", "user=postgres host=postgres password=changeme sslmode=disable")
@@ -16,14 +38,9 @@ func Connect() *gorm.DB {
 	return db
 }
 
-func RunMigration(db *gorm.DB) {
-	db.AutoMigrate(&models.User{})
+func RunMigration() {
+	instance.AutoMigrate(&models.User{})
 
 //	db.Create(&models.User{Email: "toto@address.com"})
 //	db.Create(&models.User{Email: "tzata@tata.com", Password:"azer"})
-
-	var user models.User
-	db.First(&user, 1)
-
-	println(user.Email)
 }
