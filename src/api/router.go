@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/Yuruh/Self_Tracker/src/core"
 	"github.com/Yuruh/Self_Tracker/src/database"
 	"github.com/Yuruh/Self_Tracker/src/database/models"
 	"github.com/Yuruh/Self_Tracker/src/spotify"
@@ -59,13 +60,19 @@ func RunHttpServer()  {
 	}))
 
 	// Routes
-	app.GET("/spotify", func(c echo.Context) error {
+	app.GET("/spotify/url", func(c echo.Context) error {
 		var user models.User = c.Get("user").(models.User)
 		return c.JSON(http.StatusOK, map[string]interface{}{
 			"url": spotify.BuildAuthUri(user.ID),
 			"tmp POC": c.Get("user").(models.User).Password,
 		})
 	})
+
+	app.POST("/spotify/register", spotify.RegisterRefreshToken)
+
+	app.PUT("/register-api-key", core.RegisterApiKey)
+
+	app.PUT("/record-activity", core.RecordActivity)
 
 	// Start server
 	app.Logger.Fatal(app.Start(":8090"))

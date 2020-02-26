@@ -24,6 +24,7 @@ type Connector struct {
 	retryAmount int8
 }
 
+// does probably not need to be a singleton
 
 func GetConnector() *Connector {
 	if atomic.LoadUint32(&initialized) == 1 {
@@ -41,10 +42,6 @@ func GetConnector() *Connector {
 	}
 
 	return instance
-}
-
-type TokenResponse struct {
-	AccessToken string `json:"access_token"`
 }
 
 func (spotify *Connector) getAccessFromRefresh() {
@@ -87,26 +84,6 @@ func (spotify *Connector) getAccessFromRefresh() {
 	spotify.accessToken = data.AccessToken
 }
 
-
-type Album struct {
-	Artists []Artist `json:"artists"`
-	Name string      `json:"name"`
-	Uri string       `json:"uri"`
-}
-
-type Artist struct {
-	Name string `json:"name"`
-	Id string `json:"id"`
-	Uri string `json:"uri"`
-}
-
-type Track struct {
-	Name    string   `json:"name"`
-	Id      string   `json:"id"`
-	Uri     string   `json:"uri"`
-	Artists []Artist `json:"artists"`
-	Album   Album    `json:"album"`
-}
 
 func (track *Track) Copy() Track {
 	return Track{

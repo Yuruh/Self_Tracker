@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"github.com/Yuruh/Self_Tracker/src/database/models"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -40,7 +41,23 @@ func Connect() *gorm.DB {
 
 func RunMigration() {
 	instance.AutoMigrate(&models.User{})
+	instance.AutoMigrate(&models.ApiAccess{})
 
-//	db.Create(&models.User{Email: "toto@address.com"})
+	var user models.User
+	instance.Where("email = ?", "antoine.lempereur@epitech.eu").First(&user)
+
+	var api models.ApiAccess
+	if instance.Model(&user).Related(&api).RecordNotFound() {
+		fmt.Println("Could not find matching doc")
+		instance.Create(&models.ApiAccess{
+			UserID: user.ID,
+		})
+	} else {
+		fmt.Println(api.Spotify)
+	}
+
+
+
+	//	instance.Create(&models.User{Email: "toto@address.com"})
 //	db.Create(&models.User{Email: "tzata@tata.com", Password:"azer"})
 }
