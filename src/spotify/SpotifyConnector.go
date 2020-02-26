@@ -206,7 +206,7 @@ func (spotify *Connector) GetCurrentTrack() (Player, error) {
 	return spotify.getCurrentTrack(spotify.retryAmount)
 }
 
-func BuildAuthUri() string {
+func BuildAuthUri(userId uint) string {
 	req, err := http.NewRequest("GET", "https://accounts.spotify.com/authorize", nil)
 
 	if err != nil {
@@ -219,7 +219,7 @@ func BuildAuthUri() string {
 	query.Add("redirect_uri", "http://localhost:3000/spotify-auth")
 	query.Add("scope", "user-read-playback-state")
 	query.Add("show_dialog", "true")
-	query.Add("state", "a_client_id_to_match_db")
+	query.Add("state", strconv.FormatUint(uint64(userId), 10))
 	req.URL.RawQuery = query.Encode()
 
 	return req.URL.String()

@@ -46,20 +46,25 @@ func RunHttpServer()  {
 		Claims: &TokenClaims{},
 		SigningKey: []byte(os.Getenv("ACCESS_TOKEN_SECRET")),
 		SigningMethod: "HS256",
+		ContextKey: "token",
 		Skipper: func(context echo.Context) bool {
 			if ContainsString(unprotectedPaths[:], context.Path()) {
 				return true
 			}
 			return false
 		},
+		SuccessHandler: func(context echo.Context) {
+			context.Set("user", context.Get("token").(*jwt.Token).Claims.(*TokenClaims).User)
+		},
 	}))
 
 	// Routes
 	app.GET("/spotify", func(c echo.Context) error {
+		var user models.User = c.Get("user").(models.User)
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"url": spotify.BuildAuthUri(),
-			"tmp POC": c.Get("user").(*jwt.Token).Claims.(*TokenClaims).User.Email},
-		)
+			"url": spotify.BuildAuthUri(user.ID),
+			"tmp POC": c.Get("user").(models.User).Password,
+		})
 	})
 
 	// Start server
@@ -95,9 +100,10 @@ func login(context echo.Context) error {
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(parsedBody.Password))
 
 	if err != nil {
-		println("ça match pas" + err.Error())
+		println("User not found: " + err.Error())
 		return context.String(http.StatusNotFound, "User not found")
 	} else {
+		user.Password = ""
 		claims := &TokenClaims{
 			user,
 			jwt.StandardClaims{
