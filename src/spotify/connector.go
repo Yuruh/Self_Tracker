@@ -11,37 +11,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
-	"sync/atomic"
 )
 
-var mu sync.Mutex
-var initialized uint32 = 0
-var instance *Connector
-
 type Connector struct {
-	accessToken string
-	retryAmount int8
-}
-
-// does probably not need to be a singleton
-
-func GetConnector() *Connector {
-	if atomic.LoadUint32(&initialized) == 1 {
-		return instance
-	}
-	mu.Lock()
-	defer mu.Unlock()
-
-	if initialized == 0 {
-		instance = &Connector{
-			retryAmount:int8(3),
-			accessToken:string("Initial token"),
-		}
-		atomic.StoreUint32(&initialized, 1)
-	}
-
-	return instance
+	AccessToken string
+	RefreshToken string
+	RetryAmount int8
 }
 
 func (spotify *Connector) getAccessFromRefresh() {
@@ -51,7 +26,7 @@ func (spotify *Connector) getAccessFromRefresh() {
 	requestBody.Set("client_id", os.Getenv("SPOTIFY_CLIENT_ID"))
 	requestBody.Set("client_secret", os.Getenv("SPOTIFY_CLIENT_SECRET"))
 	requestBody.Set("grant_type", "refresh_token")
-	requestBody.Set("refresh_token", os.Getenv("SPOTIFY_REFRESH_TOKEN"))
+	requestBody.Set("refresh_token", spotify.RefreshToken)
 
 	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(requestBody.Encode()))
 
@@ -81,34 +56,8 @@ func (spotify *Connector) getAccessFromRefresh() {
 		log.Fatalln(err.Error())
 	}
 
-	spotify.accessToken = data.AccessToken
-}
-
-
-func (track *Track) Copy() Track {
-	return Track{
-		Name:    track.Name,
-		Id:      track.Id,
-		Uri:     track.Uri,
-		Artists: nil,
-		Album:   Album{
-			Artists: nil,
-			Name:    track.Album.Name,
-			Uri:     track.Album.Uri,
-		},
-	}
-}
-
-type Player struct {
-	ProgressMs int64 `json:"progress_ms"`
-	Item Track `json:"item"`
-}
-
-func (player *Player) Copy() Player {
-	return Player{
-		Item: player.Item.Copy(),
-		ProgressMs: player.ProgressMs,
-	}
+	log.Println("Updating access token")
+	spotify.AccessToken = data.AccessToken
 }
 
 type ErrorCode int8
@@ -138,7 +87,7 @@ func (spotify *Connector) getCurrentTrack(retryAmount int8) (Player, error) {
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-	req.Header.Add("Authorization", "Bearer " + spotify.accessToken)
+	req.Header.Add("Authorization", "Bearer " + spotify.AccessToken)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -161,6 +110,7 @@ func (spotify *Connector) getCurrentTrack(retryAmount int8) (Player, error) {
 		}
 		return spotifyPlayer, nil
 	case resp.StatusCode == http.StatusNoContent:
+//		println("no song is currently playing")
 		return spotifyPlayer, &TrackError{Code: NotPlaying} // errors.New("user is not currently playing music")
 	case resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusBadRequest:
 		println("Invalid request")
@@ -168,8 +118,6 @@ func (spotify *Connector) getCurrentTrack(retryAmount int8) (Player, error) {
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
-
-		println(resp.StatusCode)
 		println(string(body))
 
 		spotify.getAccessFromRefresh()
@@ -180,7 +128,7 @@ func (spotify *Connector) getCurrentTrack(retryAmount int8) (Player, error) {
 }
 
 func (spotify *Connector) GetCurrentTrack() (Player, error) {
-	return spotify.getCurrentTrack(spotify.retryAmount)
+	return spotify.getCurrentTrack(spotify.RetryAmount)
 }
 
 func BuildAuthUri(userId uint) string {

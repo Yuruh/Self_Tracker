@@ -45,7 +45,7 @@ func RegisterRefreshToken(context echo.Context) error {
 		return context.NoContent(http.StatusBadRequest)
 	}
 	response := getSpotifyTokens(data.Code)
-	
+
 	var api models.ApiAccess
 	result := database.GetDB().Model(&user).Related(&api)
 	api.Spotify = response.RefreshToken

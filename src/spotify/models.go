@@ -31,3 +31,29 @@ type RegisterTokenRequest struct {
 	Code string `json:"code"`
 	State string `json:"state"`
 }
+
+func (track *Track) Copy() Track {
+	return Track{
+		Name:    track.Name,
+		Id:      track.Id,
+		Uri:     track.Uri,
+		Artists: nil,
+		Album:   Album{
+			Artists: nil,
+			Name:    track.Album.Name,
+			Uri:     track.Album.Uri,
+		},
+	}
+}
+
+type Player struct {
+	ProgressMs int64 `json:"progress_ms"`
+	Item Track `json:"item"`
+}
+
+func (player *Player) Copy() Player {
+	return Player{
+		Item: player.Item.Copy(),
+		ProgressMs: player.ProgressMs,
+	}
+}

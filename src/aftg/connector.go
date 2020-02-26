@@ -10,43 +10,21 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"sync"
-	"sync/atomic"
 	"time"
 )
 
-var mu sync.Mutex
-var initialized uint32
-var instance *Connector
-
-// may not need to be a singleton
-
-type Connector struct {}
-
-
-func GetConnector() *Connector {
-	if atomic.LoadUint32(&initialized) == 1 {
-		return instance
-	}
-	mu.Lock()
-	defer mu.Unlock()
-
-	if initialized == 0 {
-		instance = &Connector{
-		}
-		atomic.StoreUint32(&initialized, 1)
-	}
-
-	return instance
+type Connector struct {
+	ApiKey string
+	RetryAmount int8
 }
 
-func runAftgRequest(method string, path string, requestBody io.Reader, queryParams map[string]string, additionalHeaders map[string]string) (int, []byte, error) {
+func (aftg *Connector) runAftgRequest(method string, path string, requestBody io.Reader, queryParams map[string]string, additionalHeaders map[string]string) (int, []byte, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest(method, os.Getenv("AFTG_API_URL") + path, requestBody)
 	if err != nil {
 		return -1, nil, err
 	}
-	req.Header.Add("X-API-KEY", os.Getenv("AFTG_API_KEY"))
+	req.Header.Add("X-API-KEY", aftg.ApiKey)
 	req.Header.Add("Content-Type", "application/json")
 	for key, value := range additionalHeaders {
 		req.Header.Add(key, value)
@@ -80,7 +58,7 @@ type NTP struct {
 func (aftg *Connector) GetSrvDelay() int64 {
 	var ntp NTP
 
-	code, body, err := runAftgRequest("GET", "ntp", nil,
+	code, body, err := aftg.runAftgRequest("GET", "ntp", nil,
 		map[string]string{"clientTransmissionTime": strconv.FormatInt(time.Now().UnixNano() / int64(time.Millisecond), 10)}, nil)
 	if err != nil {
 		log.Fatalln(err.Error())
@@ -118,7 +96,7 @@ func (aftg *Connector) AddTag(tag Tag, clockDelta int64) {
 		log.Fatalln(err.Error())
 	}
 
-	code, body, err := runAftgRequest(
+	code, body, err := aftg.runAftgRequest(
 		"POST",
 		"tags",
 		bytes.NewReader(bodyBytes),

@@ -3,6 +3,8 @@ package core
 import (
 	"fmt"
 	"github.com/Yuruh/Self_Tracker/src/aftg"
+	"github.com/Yuruh/Self_Tracker/src/database"
+	"github.com/Yuruh/Self_Tracker/src/database/models"
 	"github.com/Yuruh/Self_Tracker/src/spotify"
 	"github.com/labstack/echo/v4"
 	"log"
@@ -11,17 +13,32 @@ import (
 )
 
 func RecordActivity(context echo.Context) error {
-	return context.NoContent(http.StatusNotImplemented)
+	var user models.User = context.Get("user").(models.User)
+	var api models.ApiAccess
+	if database.GetDB().Model(&user).Related(&api).RecordNotFound() {
+		log.Fatalln("Could not find Api access")
+	}
+	var spotifyConnection = spotify.Connector{RefreshToken: api.Spotify, RetryAmount: 2}
+	var aftgConnection = aftg.Connector{ApiKey: api.AffectTag, RetryAmount: 2}
+	println("Starting to record")
+
+	go runTicker(spotifyConnection, aftgConnection)
+	return context.NoContent(http.StatusOK)
 }
 
 func RegisterApiKey(context echo.Context) error {
 	return context.NoContent(http.StatusNotImplemented)
 }
 
-func processLastPlayedSong(savedPlayer* spotify.Player, tickInterval time.Duration) {
-	var delay = aftg.GetConnector().GetSrvDelay()
+func processLastPlayedSong(savedPlayer* spotify.Player,
+	tickInterval time.Duration,
+	connector *spotify.Connector,
+	aftgConnector aftg.Connector,
+	) {
+	var delay int64 = aftgConnector.GetSrvDelay()
 	fmt.Println("srv delay:", delay)
-	spotifyPlayer, err := spotify.GetConnector().GetCurrentTrack()
+
+	spotifyPlayer, err := connector.GetCurrentTrack()
 	if err != nil {
 		if err, ok := err.(*spotify.TrackError); ok {
 			if err.Code == spotify.NotPlaying {
@@ -45,7 +62,7 @@ func processLastPlayedSong(savedPlayer* spotify.Player, tickInterval time.Durati
 
 			fmt.Print("Title \"", savedPlayer.Item.Name, "\" played from ", time.Unix(trackBeginTime / 1000, 0))
 			fmt.Println(" to", time.Unix(trackEndTime / 1000, 0))
-			aftg.GetConnector().AddTag(aftg.Tag{
+			aftgConnector.AddTag(aftg.Tag{
 				TimestampBegin: trackBeginTime,
 				TimestampEnd: trackEndTime,
 				Name: savedPlayer.Item.Artists[0].Name + "_" + savedPlayer.Item.Name,
@@ -62,18 +79,18 @@ func processLastPlayedSong(savedPlayer* spotify.Player, tickInterval time.Durati
 	//			println(" is playing since ", spotifyPlayer.ProgressMs, " milliseconds")
 }
 
-func runTicker() {
+func runTicker(connector spotify.Connector, aftgConnector aftg.Connector) {
 	//	var ticker *time.Ticker = time.NewTicker(time.Minute * 3)
 	const tickInterval time.Duration = time.Second * 45
 	var ticker *time.Ticker = time.NewTicker(tickInterval)
 
 	var savedPlayer spotify.Player
-	processLastPlayedSong(&savedPlayer, tickInterval)
+	processLastPlayedSong(&savedPlayer, tickInterval, &connector, aftgConnector)
 
 	for {
 		select {
 		case <-ticker.C:
-			processLastPlayedSong(&savedPlayer, tickInterval)
+			processLastPlayedSong(&savedPlayer, tickInterval, &connector, aftgConnector)
 		}
 	}
 }
