@@ -19,7 +19,7 @@ services:
     volumes:
       - pgadmin-data:/var/lib/pgadmin
   api:
-#    network_mode: host
+    #network_mode: host
     environment:
       - DB_HOST=postgres
     env_file:
