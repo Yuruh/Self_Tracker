@@ -10,6 +10,7 @@ import {
     Route,
     Link, Redirect, useLocation
 } from "react-router-dom";
+import HomePage from "./HomePage";
 
 // @ts-ignore
 const PrivateRoute = ({ component: Component, ...rest }) => (
@@ -131,18 +132,6 @@ function RegisterPage() {
             <Link to={"/login"}>Log in here</Link>
         </div>
     )
-}
-
-function HomePage() {
-    return <Button onClick={async () => {
-        try {
-            const res = await Api.getSpotifyUrl();
-//                console.log(res.data)
-            window.location.replace(res.data.url);
-        } catch (e) {
-            console.log(e.message)
-        }
-    }}>Authorize Spotify</Button>
 }
 
 export default App;

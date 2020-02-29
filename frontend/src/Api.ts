@@ -20,6 +20,10 @@ export default class Api {
         })
     }
 
+    static async recordActivty(enabled: boolean) {
+        return this.axiosInstance.put("/record-activity", {enabled});
+    }
+
     static async login(email: string, pwd: string) {
         try {
             const response = await this.axiosInstance.post("/login", {
