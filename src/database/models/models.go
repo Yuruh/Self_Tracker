@@ -13,12 +13,12 @@ type User struct {
 
 	//	ApiAccess	ApiAccess `gorm:"foreignKey:UserID" json:",omitempty"`
 
-	Spotify Connector `gorm:"foreignKey:UserID" json:"spotify,omitempty"`
-	AffectTag Connector `gorm:"foreignKey:UserID" json:"affect_tag,omitempty"`
+	Connectors []Connector `json:"connectors"`
 }
-
+//gorm:"foreignKey:Name"
 type Connector struct {
 	gorm.Model
+	Name		string `json:"name"`
 	AvatarUrl	string `json:"avatar_url"`
 	Enabled		bool `gorm:"default:false" json:"enabled"`
 	Registered	bool `gorm:"default:false" json:"registered"`

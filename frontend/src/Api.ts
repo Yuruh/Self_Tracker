@@ -20,6 +20,12 @@ export default class Api {
         })
     }
 
+    static registerAftg(key: string) {
+        return this.axiosInstance.post("/aftg/register", {
+            key
+        })
+    }
+
     static async recordActivty(enabled: boolean) {
         return this.axiosInstance.put("/record-activity", {enabled});
     }

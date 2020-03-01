@@ -105,9 +105,11 @@ function AuthSpotifyPage() {
     if (!code || ! state) {
         return <p>Invalid params</p>
     }
-    Api.registerSpotify(code, state)
-        .then(() => setRedirectTo("/"))
-        .catch();
+    if (redirectTo === "") {
+        Api.registerSpotify(code, state)
+            .then(() => setRedirectTo("/"))
+            .catch();
+    }
     if (redirectTo !== "") {
         return <Redirect to={{ pathname: "/" }} />
     }

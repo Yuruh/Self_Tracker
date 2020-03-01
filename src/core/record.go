@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"github.com/Yuruh/Self_Tracker/src/aftg"
-	"github.com/Yuruh/Self_Tracker/src/database/models"
 	"github.com/Yuruh/Self_Tracker/src/spotify"
 	"github.com/labstack/echo/v4"
 	"log"
@@ -12,15 +11,15 @@ import (
 )
 
 func RecordActivity(context echo.Context) error {
-	var user models.User = context.Get("user").(models.User)
-	/*if database.GetDB().Model(&user).Related(&api).RecordNotFound() {
+	/*var user models.User = context.Get("user").(models.User)
+	if database.GetDB().Model(&user).Related(&api).RecordNotFound() {
 		log.Fatalln("Could not find Api access")
-	}*/
+	}
 	var spotifyConnection = spotify.Connector{RefreshToken: user.Spotify.Key, RetryAmount: 2}
 	var aftgConnection = aftg.Connector{ApiKey: user.AffectTag.Key, RetryAmount: 2}
 	println("Starting to record")
 
-	go runTicker(spotifyConnection, aftgConnection)
+	go runTicker(spotifyConnection, aftgConnection)*/
 	return context.NoContent(http.StatusOK)
 }
 

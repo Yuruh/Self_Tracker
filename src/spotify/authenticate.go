@@ -49,12 +49,17 @@ func RegisterRefreshToken(context echo.Context) error {
 	}
 
 	var spotifyConnector models.Connector
-	result := database.GetDB().Model(&user).Related(&spotifyConnector)
+	result := database.GetDB().Model(&user).
+		Where("name = ?", "Spotify").
+		Related(&spotifyConnector)
 	spotifyConnector.Key = response.RefreshToken
 	spotifyConnector.Registered = true
+	spotifyConnector.Name = "Spotify"
+	spotifyConnector.UserID = user.ID
+
 	if result.RecordNotFound() {
 		fmt.Println("Could not find matching doc, creating")
-		spotifyConnector.UserID = user.ID
+//		spotifyConnector.UserID = user.ID
 		database.GetDB().Create(&spotifyConnector)
 	} else {
 		database.GetDB().Save(&spotifyConnector)
