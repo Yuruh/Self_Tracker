@@ -2,10 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/Yuruh/Self_Tracker/src/aftg"
 	"github.com/Yuruh/Self_Tracker/src/core"
 	"github.com/Yuruh/Self_Tracker/src/database"
 	"github.com/Yuruh/Self_Tracker/src/database/models"
 	"github.com/Yuruh/Self_Tracker/src/spotify"
+	"github.com/Yuruh/Self_Tracker/src/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -16,15 +18,6 @@ import (
 	"os"
 	"time"
 )
-
-func ContainsString(src []string, value string) bool {
-	for _, elem := range src {
-		if elem == value {
-			return true
-		}
-	}
-	return false
-}
 
 func RunHttpServer()  {
 	// Echo instance
@@ -49,7 +42,7 @@ func RunHttpServer()  {
 		SigningMethod: "HS256",
 		ContextKey: "token",
 		Skipper: func(context echo.Context) bool {
-			if ContainsString(unprotectedPaths[:], context.Path()) {
+			if utils.ContainsString(unprotectedPaths[:], context.Path()) {
 				return true
 			}
 			return false
@@ -59,18 +52,19 @@ func RunHttpServer()  {
 		},
 	}))
 
-	// Routes
-	app.GET("/spotify/url", func(c echo.Context) error {
+	app.GET("/me", func (c echo.Context) error {
 		var user models.User = c.Get("user").(models.User)
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"url": spotify.BuildAuthUri(user.ID),
-			"tmp POC": c.Get("user").(models.User).Password,
-		})
+
+		database.GetDB().Set("gorm:auto_preload", true).First(&user)
+
+		return c.JSON(http.StatusOK, user)
 	})
 
+	// Routes
+	app.GET("/spotify/url", spotify.GetAuthUrl)
 	app.POST("/spotify/register", spotify.RegisterRefreshToken)
 
-	app.PUT("/register-api-key", core.RegisterApiKey)
+	app.POST("/aftg/register", aftg.RegisterApiKey)
 
 	app.PUT("/record-activity", core.RecordActivity)
 

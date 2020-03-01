@@ -9,19 +9,29 @@ import (
 type User struct {
 	gorm.Model
 	Email       string  `gorm:"type:varchar(100);unique_index" json:"email"`
-	Password	string  `gorm:"not null" json:"password,omitempty"`
-	ApiAccess	ApiAccess `gorm:"foreignKey:UserID" json:",omitempty"`
+	Password	string  `gorm:"not null" json:"-"`
+
+	//	ApiAccess	ApiAccess `gorm:"foreignKey:UserID" json:",omitempty"`
+
+	Spotify Connector `gorm:"foreignKey:UserID" json:"spotify,omitempty"`
+	AffectTag Connector `gorm:"foreignKey:UserID" json:"affect_tag,omitempty"`
+}
+
+type Connector struct {
+	gorm.Model
+	AvatarUrl	string `json:"avatar_url"`
+	Enabled		bool `gorm:"default:false" json:"enabled"`
+	Registered	bool `gorm:"default:false" json:"registered"`
+	Key			string `json:"-"`
+	UserID uint
 }
 
 type ApiAccess struct {
 	gorm.Model
-	UserID uint
 
 	// Spotify refresh token
-	Spotify string
 
 	// Affect-tag API Key
-	AffectTag string
 
 	// Github API ?
 

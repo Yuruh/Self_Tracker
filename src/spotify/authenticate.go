@@ -2,11 +2,12 @@ package spotify
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/Yuruh/Self_Tracker/src/database"
 	"github.com/Yuruh/Self_Tracker/src/database/models"
+	"github.com/Yuruh/Self_Tracker/src/utils"
 	"github.com/labstack/echo/v4"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -16,21 +17,18 @@ import (
 	"strings"
 )
 
-func ReadBody(body io.ReadCloser) string {
-	defer body.Close()
-
-	result, err := ioutil.ReadAll(body)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-	return string(result)
+func GetAuthUrl(c echo.Context) error {
+	var user models.User = c.Get("user").(models.User)
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"url": BuildAuthUri(user.ID),
+		"tmp POC": c.Get("user").(models.User).Password,
+	})
 }
 
 func RegisterRefreshToken(context echo.Context) error {
 	var user models.User = context.Get("user").(models.User)
 
-	body := ReadBody(context.Request().Body)
-	println(body)
+	body := utils.ReadBody(context.Request().Body)
 
 	var data RegisterTokenRequest
 
@@ -44,23 +42,28 @@ func RegisterRefreshToken(context echo.Context) error {
 		println("Bad state")
 		return context.NoContent(http.StatusBadRequest)
 	}
-	response := getSpotifyTokens(data.Code)
+	response, err := getSpotifyTokens(data.Code)
 
-	var api models.ApiAccess
-	result := database.GetDB().Model(&user).Related(&api)
-	api.Spotify = response.RefreshToken
+	if err != nil {
+		return context.NoContent(http.StatusBadRequest)
+	}
+
+	var spotifyConnector models.Connector
+	result := database.GetDB().Model(&user).Related(&spotifyConnector)
+	spotifyConnector.Key = response.RefreshToken
+	spotifyConnector.Registered = true
 	if result.RecordNotFound() {
 		fmt.Println("Could not find matching doc, creating")
-		api.UserID = user.ID
-		database.GetDB().Create(&api)
+		spotifyConnector.UserID = user.ID
+		database.GetDB().Create(&spotifyConnector)
 	} else {
-		database.GetDB().Save(&api)
+		database.GetDB().Save(&spotifyConnector)
 	}
 
 	return context.NoContent(http.StatusOK)
 }
 
-func getSpotifyTokens(code string) TokenResponse {
+func getSpotifyTokens(code string) (TokenResponse, error) {
 	client := &http.Client{}
 
 	requestBody := url.Values{}
@@ -94,9 +97,14 @@ func getSpotifyTokens(code string) TokenResponse {
 	println("response: ", string(body))
 
 	var response TokenResponse
+
+	if resp.StatusCode != http.StatusOK {
+		return response, errors.New("could not validate spotify request")
+	}
+
 	err = json.Unmarshal([]byte(body), &response)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-	return response
+	return response, nil
 }

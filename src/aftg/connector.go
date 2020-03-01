@@ -48,13 +48,6 @@ func (aftg *Connector) runAftgRequest(method string, path string, requestBody io
 	return resp.StatusCode, body, err
 }
 
-type NTP struct {
-	SrvReceptionTime int64 `json:"srvReceptionTime"`
-	ClientTransmissionTime int64 `json:"clientTransmissionTime"`
-	SrvTransmissionTime int64 `json:"srvTransmissionTime"`
-	ClientReceptionTime int64 `json:"clientReceptionTime"`
-}
-
 func (aftg *Connector) GetSrvDelay() int64 {
 	var ntp NTP
 
@@ -79,14 +72,6 @@ func (aftg *Connector) GetSrvDelay() int64 {
 		(ntp.SrvTransmissionTime - ntp.ClientReceptionTime)) / 2
 
 	return delta
-}
-
-type Tag struct {
-	Name string `json:"name"`
-	TimestampBegin int64 `json:"timestampBegin"`
-	TimestampEnd int64 `json:"timestampEnd"`
-	ProductName string `json:"productName"`
-	TagName string `json:"tagName"`
 }
 
 func (aftg *Connector) AddTag(tag Tag, clockDelta int64) {
