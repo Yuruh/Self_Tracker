@@ -11,6 +11,12 @@ import (
 	"net/http"
 )
 
+func ensureKeyValid(key string) error {
+	var connector = Connector{ApiKey:key, RetryAmount:2}
+
+	return connector.GetMe()
+}
+
 func RegisterApiKey(context echo.Context) error {
 	var user models.User = context.Get("user").(models.User)
 
@@ -23,6 +29,13 @@ func RegisterApiKey(context echo.Context) error {
 		println(err.Error())
 		return context.NoContent(http.StatusBadRequest)
 	}
+
+	err = ensureKeyValid(data.Key)
+	if err != nil {
+		println(err.Error())
+		return context.String(http.StatusBadRequest, "Could not use API Key")
+	}
+
 
 	var aftgConnector models.Connector
 
@@ -47,5 +60,6 @@ func RegisterApiKey(context echo.Context) error {
 		database.GetDB().Save(&aftgConnector)
 	}
 
-	return context.NoContent(http.StatusOK)
+
+	return context.JSON(http.StatusOK, aftgConnector)
 }

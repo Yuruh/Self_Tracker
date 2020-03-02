@@ -44,4 +44,8 @@ export default class Api {
             console.log(e);
         }
     }
+
+    static async getApiKeys() {
+        return this.axiosInstance.get("/connectors");
+    }
 }

@@ -3,31 +3,106 @@ package core
 import (
 	"fmt"
 	"github.com/Yuruh/Self_Tracker/src/aftg"
+	"github.com/Yuruh/Self_Tracker/src/database"
+	"github.com/Yuruh/Self_Tracker/src/database/models"
 	"github.com/Yuruh/Self_Tracker/src/spotify"
-	"github.com/labstack/echo/v4"
 	"log"
-	"net/http"
 	"time"
 )
 
-func RecordActivity(context echo.Context) error {
-	/*var user models.User = context.Get("user").(models.User)
-	if database.GetDB().Model(&user).Related(&api).RecordNotFound() {
-		log.Fatalln("Could not find Api access")
-	}
-	var spotifyConnection = spotify.Connector{RefreshToken: user.Spotify.Key, RetryAmount: 2}
-	var aftgConnection = aftg.Connector{ApiKey: user.AffectTag.Key, RetryAmount: 2}
-	println("Starting to record")
+type userSetup struct {
+	player spotify.Player
+	spotifyCon spotify.Connector
+	aftgCon aftg.Connector
+	ID uint
+}
 
-	go runTicker(spotifyConnection, aftgConnection)*/
-	return context.NoContent(http.StatusOK)
+func findIndex(a []userSetup, x uint) int {
+	for i, n := range a {
+		if x == n.ID {
+			return i
+		}
+	}
+	return len(a)
+}
+
+// I Cannot use a map as i need to retrieve the address of elements
+
+func RecordActivity() {
+	const tickInterval time.Duration = time.Second * 45
+	var ticker *time.Ticker = time.NewTicker(tickInterval)
+
+	// I Cannot use a map as i need to retrieve the address of elements
+
+	var userSetups = make([]userSetup, 0)
+
+	println("Initializing ticker")
+
+	// need a dynamic map of user -> savedPlayer
+	// cleanup the map on every round
+
+	for {
+		select {
+		case <-ticker.C:
+			println("Running tick")
+			var recordingUsers []models.User
+
+			err := database.GetDB().Where("recording = ?", true).Preload("Connectors").Find(&recordingUsers)
+			if err.RecordNotFound() {
+				println("No recording user found")
+				continue
+			}
+
+			for _, user := range recordingUsers {
+				var idx = findIndex(userSetups, user.ID)
+				if idx == len(userSetups) {
+					println("Setting up user", user.ID)
+
+					var spotifyConnector models.Connector
+					var aftgConnector models.Connector
+
+					for _, elem := range user.Connectors {
+						println(elem.Name)
+						if elem.Name == "Affect-tag" {
+							aftgConnector = elem
+						} else if elem.Name == "Spotify" {
+							spotifyConnector = elem
+						}
+					}
+
+					if !spotifyConnector.Registered || ! aftgConnector.Registered {
+						continue
+					}
+
+					userSetups = append(userSetups, userSetup{
+						player: spotify.Player{},
+						aftgCon:aftg.Connector{ApiKey: aftgConnector.Key, RetryAmount: 2},
+						spotifyCon:spotify.Connector{RefreshToken: spotifyConnector.Key, RetryAmount: 2},
+						ID: user.ID,
+					})
+				}
+
+//				var savedPlayer spotify.Player
+
+				processLastPlayedSong(
+					&userSetups[idx].player,
+					tickInterval,
+					&userSetups[idx].spotifyCon,
+					userSetups[idx].aftgCon,
+				)
+			}
+
+		}
+	}
+
+
 }
 
 func processLastPlayedSong(savedPlayer* spotify.Player,
 	tickInterval time.Duration,
 	connector *spotify.Connector,
 	aftgConnector aftg.Connector,
-	) {
+) {
 	var delay int64 = aftgConnector.GetSrvDelay()
 	fmt.Println("srv delay:", delay)
 
@@ -37,7 +112,7 @@ func processLastPlayedSong(savedPlayer* spotify.Player,
 			if err.Code == spotify.NotPlaying {
 				println("Not currently playing")
 			} else {
-				log.Fatal(err.Error())
+				log.Fatalln(err.Error())
 			}
 		}
 	}

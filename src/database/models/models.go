@@ -10,7 +10,7 @@ type User struct {
 	gorm.Model
 	Email       string  `gorm:"type:varchar(100);unique_index" json:"email"`
 	Password	string  `gorm:"not null" json:"-"`
-
+	Recording	bool	`gorm:"default:false" json:"recording"`
 	//	ApiAccess	ApiAccess `gorm:"foreignKey:UserID" json:",omitempty"`
 
 	Connectors []Connector `json:"connectors"`

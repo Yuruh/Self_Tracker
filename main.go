@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/Yuruh/Self_Tracker/src/api"
+	"github.com/Yuruh/Self_Tracker/src/core"
 	"github.com/Yuruh/Self_Tracker/src/database"
 	_ "github.com/lib/pq"
 )
@@ -26,6 +27,8 @@ func main() {
 	defer database.GetDB().Close()
 
 	database.RunMigration()
+
+	go core.RecordActivity()
 
 	api.RunHttpServer()
 

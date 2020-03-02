@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"github.com/Yuruh/Self_Tracker/src/aftg"
-	"github.com/Yuruh/Self_Tracker/src/core"
 	"github.com/Yuruh/Self_Tracker/src/database"
 	"github.com/Yuruh/Self_Tracker/src/database/models"
 	"github.com/Yuruh/Self_Tracker/src/spotify"
@@ -52,12 +51,14 @@ func RunHttpServer()  {
 		},
 	}))
 
-	app.GET("/me", func (c echo.Context) error {
+	app.GET("/connectors", func (c echo.Context) error {
 		var user models.User = c.Get("user").(models.User)
+		var connectors []models.Connector
+		database.GetDB().Where("user_id = ?", user.ID).Find(&connectors)
 
-		database.GetDB().Set("gorm:auto_preload", true).First(&user)
+//		database.GetDB().Set("gorm:auto_preload", true).First(&user)
 
-		return c.JSON(http.StatusOK, user)
+		return c.JSON(http.StatusOK, connectors)
 	})
 
 	// Routes
@@ -66,11 +67,28 @@ func RunHttpServer()  {
 
 	app.POST("/aftg/register", aftg.RegisterApiKey)
 
-	app.PUT("/record-activity", core.RecordActivity)
+	app.PUT("/record-activity", func(context echo.Context) error {
+		var user models.User = context.Get("user").(models.User)
+		body := utils.ReadBody(context.Request().Body)
+
+		var data RecordActivityRequest
+
+		err := json.Unmarshal([]byte(body), &data)
+		if err != nil {
+			println(err.Error())
+			return context.NoContent(http.StatusBadRequest)
+		}
+		user.Recording = data.Enabled
+		database.GetDB().Save(&user)
+		return context.JSON(http.StatusOK, user)
+	})
 
 	// Start server
 	app.Logger.Fatal(app.Start(":8090"))
+}
 
+type RecordActivityRequest struct {
+	Enabled bool `json:"enabled"`
 }
 
 func (c TokenClaims) Valid() error {

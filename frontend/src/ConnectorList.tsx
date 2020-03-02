@@ -3,7 +3,7 @@ import ListItem from "@material-ui/core/ListItem";
 import ListItemAvatar from "@material-ui/core/ListItemAvatar";
 import Avatar from "@material-ui/core/Avatar";
 import ListItemText from "@material-ui/core/ListItemText";
-import React from "react"
+import React, {useEffect} from "react"
 import ListSubheader from "@material-ui/core/ListSubheader";
 import ListItemSecondaryAction from "@material-ui/core/ListItemSecondaryAction";
 import Button from "@material-ui/core/Button";
@@ -17,6 +17,7 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogContentText from "@material-ui/core/DialogContentText";
 import TextField from "@material-ui/core/TextField";
 import DialogActions from "@material-ui/core/DialogActions";
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 async function connectSpotify() {
     try {
@@ -27,24 +28,49 @@ async function connectSpotify() {
     }
 }
 
-async function connectAftg(key: string) {
-    try {
-        const res = await Api.registerAftg(key);
-    } catch (e) {
-        console.log(e.message)
-    }
+async function connectAftg(key: string): Promise<IConnector> {
+    const res = await Api.registerAftg(key);
+    return res.data
+}
+
+interface IConnector {
+    ID: number;
+    name: string;
+    avatar_url: string;
+    enabled: boolean;
+    registered: boolean;
 }
 
 export default function ConnectorList() {
     const [open, setOpen] = React.useState(false);
     const [key, setKey] = React.useState("");
+    const [connectors, setConnectors] = React.useState<IConnector[]>([]);
+    const [fetching, setFetching] = React.useState(false);
+
+
+    const fetchData = async() => {
+        setFetching(true);
+        const result = await Api.getApiKeys();
+        setConnectors(result.data);
+        setFetching(false);
+    };
+
+    useEffect(() => {
+        fetchData().catch(e => console.log(e));
+    }, []);
+
 
     const handleClickOpen = () => {
         setOpen(true);
     };
 
     const onAftgIntegrate = () => {
-        connectAftg(key).then(() => handleClose())
+        connectAftg(key).then((data: IConnector) => {
+            const idx = connectors.findIndex((elem) => elem.name === "Affect-tag");
+            connectors[idx] = data;
+            setConnectors(connectors);
+            handleClose()
+        })
             .catch((e) => console.log(e));
     };
 
@@ -52,17 +78,36 @@ export default function ConnectorList() {
         setOpen(false);
     };
 
+    const aftg: IConnector = connectors.find((elem) => elem.name === "Affect-tag") || {
+        enabled: false,
+        name: "Affect-tag",
+        registered: false,
+        avatar_url: "",
+        ID: 1
+    };
+    const spotify: IConnector = connectors.find((elem) => elem.name === "Spotify") || {
+        enabled: false,
+        name: "Spotify",
+        registered: false,
+        avatar_url: "",
+        ID: 1
+    };
+
+    if (fetching) {
+        return <CircularProgress/>
+    }
+
     return <div>
         <List subheader={<ListSubheader>Connectors</ListSubheader>}>
-            <Connector avatarSrc={"https://cdn0.capterra-static.com/logos/150/2137143-1574690999.png"}
-                       isConnected={true}
-                       title={"Affect-tag"}
+            {aftg && <Connector avatarSrc={"https://cdn0.capterra-static.com/logos/150/2137143-1574690999.png"}
+                       isConnected={aftg.registered}
+                       title={aftg.name}
                        onConnect={handleClickOpen}
-            />
-            <Connector title={"Spotify"}
+            />}
+            {spotify && <Connector title={spotify.name}
                        onConnect={connectSpotify}
-                       isConnected={false}
-                       avatarSrc={"https://upload.wikimedia.org/wikipedia/fr/6/60/Spotify_logo_sans_texte.png"}/>
+                       isConnected={spotify.registered}
+                       avatarSrc={"https://upload.wikimedia.org/wikipedia/fr/6/60/Spotify_logo_sans_texte.png"}/>}
         </List>
         <Dialog open={open} onClose={handleClose} aria-labelledby="form-dialog-title">
             <DialogTitle id="form-dialog-title">Affect Tag Integration</DialogTitle>

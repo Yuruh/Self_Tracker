@@ -11,6 +11,11 @@ import {
     Link, Redirect, useLocation
 } from "react-router-dom";
 import HomePage from "./HomePage";
+import {
+    createMuiTheme,
+    ThemeProvider,
+} from '@material-ui/core/styles';
+import {blueGrey, deepOrange} from "@material-ui/core/colors";
 
 // @ts-ignore
 const PrivateRoute = ({ component: Component, ...rest }) => (
@@ -28,25 +33,34 @@ const PrivateRoute = ({ component: Component, ...rest }) => (
     }} />
 );
 
+const theme = createMuiTheme({
+    palette: {
+        primary: deepOrange,
+        secondary: blueGrey
+    },
+} as any);
+
 const App = () => {
   return (
       <Router>
-          <div>
-              {/* A <Switch> looks through its children <Route>s and
+          <ThemeProvider theme={theme}>
+              <div>
+                  {/* A <Switch> looks through its children <Route>s and
             renders the first one that matches the current URL. */}
-              <Switch>
-                  <Route path="/login">
-                      <LoginPage/>
-                  </Route>
-                  <Route path="/register">
-                      <RegisterPage/>
-                  </Route>
-                  <Route path="/spotify-auth">
-                      <AuthSpotifyPage/>
-                  </Route>
-                  <PrivateRoute component={HomePage} path="/"/>
-              </Switch>
-          </div>
+                  <Switch>
+                      <Route path="/login">
+                          <LoginPage/>
+                      </Route>
+                      <Route path="/register">
+                          <RegisterPage/>
+                      </Route>
+                      <Route path="/spotify-auth">
+                          <AuthSpotifyPage/>
+                      </Route>
+                      <PrivateRoute component={HomePage} path="/"/>
+                  </Switch>
+              </div>
+          </ThemeProvider>
       </Router>
   );
 };

@@ -97,3 +97,23 @@ func (aftg *Connector) AddTag(tag Tag, clockDelta int64) {
 		println(string(body))
 	}
 }
+
+func (aftg *Connector) GetMe() error {
+	fmt.Println("GET /me")
+
+	code, _, err := aftg.runAftgRequest(
+		"GET",
+		"me",
+		nil,
+		nil,
+		nil,
+	)
+
+	if err != nil {
+		return fmt.Errorf("aftg request error: %w", err)
+	}
+	if code != http.StatusOK {
+		return fmt.Errorf("invalid api key, could not retrieve me, error code: %d", code)
+	}
+	return nil
+}
